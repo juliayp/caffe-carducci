@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 
 const MENU_URL = 'https://menu.caffecarducci.com/'
+const MENU_DRAWER_EXIT_MS = 540
 const MAPS_URL =
   'https://www.google.com/maps/dir/?api=1&destination=Corso+Giosu%C3%A8+Carducci+18%2C+58100+Grosseto+GR'
 const MAP_EMBED_URL =
   'https://www.google.com/maps?q=Corso+Giosu%C3%A8+Carducci+18%2C+58100+Grosseto+GR&output=embed'
-const HERO_MEDIA = 'photo'
 const LOCATION = {
   street: 'Corso Giosuè Carducci, 18',
   locality: '58100 Grosseto GR',
@@ -265,78 +265,21 @@ function Header({ onBook }) {
   )
 }
 
-function Hero({ onBook }) {
-  const videoMode = HERO_MEDIA === 'video'
-  const videoRef = useRef(null)
-  const [reducedMotion, setReducedMotion] = useState(false)
-  const [videoPlaying, setVideoPlaying] = useState(true)
-  const [videoEnded, setVideoEnded] = useState(false)
-
-  useEffect(() => {
-    if (!videoMode) return undefined
-
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const updateMotionPreference = () => setReducedMotion(mediaQuery.matches)
-    updateMotionPreference()
-    mediaQuery.addEventListener?.('change', updateMotionPreference)
-    return () => mediaQuery.removeEventListener?.('change', updateMotionPreference)
-  }, [videoMode])
-
-  const toggleVideo = () => {
-    if (!videoRef.current) return
-
-    if (videoRef.current.paused) {
-      if (videoEnded || videoRef.current.currentTime >= videoRef.current.duration - 0.05) {
-        videoRef.current.currentTime = 0
-        setVideoEnded(false)
-      }
-      videoRef.current.play().catch(() => {})
-    } else {
-      videoRef.current.pause()
-    }
-  }
-
+function Hero({ onBook, onOpenMenu }) {
   return (
     <section className="hero" id="top" aria-labelledby="hero-title">
-      <div className={`hero-media hero-media--${HERO_MEDIA}`} aria-hidden="true">
-        {videoMode ? (
-          reducedMotion ? (
-            <img src="/assets/hero/poster.webp" alt="" />
-          ) : (
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            preload="metadata"
-            poster="/assets/hero/poster.webp"
-            onPlay={() => {
-              setVideoPlaying(true)
-              setVideoEnded(false)
-            }}
-            onPause={() => setVideoPlaying(false)}
-            onEnded={() => {
-              setVideoPlaying(false)
-              setVideoEnded(true)
-            }}
-          >
-            <source src="/assets/hero/hero-carducci.webm" type="video/webm" />
-            <source src="/assets/hero/hero-carducci.mp4" type="video/mp4" />
-          </video>
-          )
-        ) : (
-          <picture>
-            <source srcSet="/assets/hero/carducci-cup-closeup.webp" type="image/webp" />
-            <img
-              src="/assets/hero/carducci-cup-closeup.png"
-              alt=""
-              width="1672"
-              height="941"
-              loading="eager"
-              fetchPriority="high"
-            />
-          </picture>
-        )}
+      <div className="hero-media" aria-hidden="true">
+        <picture>
+          <source srcSet="/assets/hero/carducci-cup-closeup.webp" type="image/webp" />
+          <img
+            src="/assets/hero/carducci-cup-closeup.png"
+            alt=""
+            width="1672"
+            height="941"
+            loading="eager"
+            fetchPriority="high"
+          />
+        </picture>
       </div>
       <div className="hero-shade" />
 
@@ -348,14 +291,13 @@ function Hero({ onBook }) {
           <p className="hero-location">Grosseto, Toscana</p>
         </div>
         <div className="hero-actions">
-          <a
-            className="button brand-cta brand-cta--primary"
-            href={MENU_URL}
-            target="_blank"
-            rel="noreferrer"
+          <button
+            className="button brand-cta brand-cta--primary menu-drawer-trigger"
+            type="button"
+            onClick={onOpenMenu}
           >
             Scopri il menu <Arrow />
-          </a>
+          </button>
           <button
             className="text-link brand-cta brand-cta--underline hero-book-trigger"
             type="button"
@@ -369,17 +311,6 @@ function Hero({ onBook }) {
       <a className="hero-scroll" href="#storia" aria-label="Scorri alla nostra storia">
         <span aria-hidden="true">↓</span>
       </a>
-      {videoMode && !reducedMotion && (
-        <button
-          className="hero-media-control"
-          type="button"
-          aria-label={videoPlaying ? 'Metti in pausa il video' : videoEnded ? 'Riproduci di nuovo il video' : 'Riproduci il video'}
-          onClick={toggleVideo}
-        >
-          <span aria-hidden="true">{videoPlaying ? 'Ⅱ' : videoEnded ? '↻' : '▶'}</span>
-          {videoPlaying ? 'Pausa' : videoEnded ? 'Rivedi' : 'Riproduci'}
-        </button>
-      )}
     </section>
   )
 }
@@ -436,7 +367,7 @@ function Story() {
   )
 }
 
-function Piatti() {
+function Piatti({ onOpenMenu }) {
   return (
     <section className="piatti section" id="piatti" aria-labelledby="piatti-title">
       <div className="page-shell piatti-shell">
@@ -496,14 +427,13 @@ function Piatti() {
           </figure>
         </div>
 
-        <a
-          className="button brand-cta brand-cta--primary piatti-cta"
-          href={MENU_URL}
-          target="_blank"
-          rel="noreferrer"
+        <button
+          className="button brand-cta brand-cta--primary piatti-cta menu-drawer-trigger"
+          type="button"
+          onClick={onOpenMenu}
         >
           Scopri il menu <Arrow />
-        </a>
+        </button>
       </div>
     </section>
   )
@@ -1276,6 +1206,198 @@ function Footer({ onBook }) {
   )
 }
 
+function MenuDrawer({ open, onRequestClose, onExited }) {
+  const [rendered, setRendered] = useState(open)
+  const [phase, setPhase] = useState(open ? 'open' : 'closed')
+  const [iframeLoaded, setIframeLoaded] = useState(false)
+  const panelRef = useRef(null)
+  const closeButtonRef = useRef(null)
+  const renderedRef = useRef(open)
+  const enterFrameRef = useRef(null)
+  const settleFrameRef = useRef(null)
+  const exitTimerRef = useRef(null)
+  const onRequestCloseRef = useRef(onRequestClose)
+  const onExitedRef = useRef(onExited)
+
+  useEffect(() => {
+    onRequestCloseRef.current = onRequestClose
+  }, [onRequestClose])
+
+  useEffect(() => {
+    onExitedRef.current = onExited
+  }, [onExited])
+
+  useEffect(() => {
+    window.cancelAnimationFrame(enterFrameRef.current)
+    window.cancelAnimationFrame(settleFrameRef.current)
+    window.clearTimeout(exitTimerRef.current)
+
+    if (open) {
+      if (!renderedRef.current) {
+        renderedRef.current = true
+        setRendered(true)
+        setIframeLoaded(false)
+      }
+
+      setPhase('opening')
+      enterFrameRef.current = window.requestAnimationFrame(() => {
+        settleFrameRef.current = window.requestAnimationFrame(() => setPhase('open'))
+      })
+    } else if (renderedRef.current) {
+      setPhase('closing')
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      exitTimerRef.current = window.setTimeout(
+        () => {
+          renderedRef.current = false
+          setRendered(false)
+          setPhase('closed')
+          onExitedRef.current?.()
+        },
+        reducedMotion ? 20 : MENU_DRAWER_EXIT_MS,
+      )
+    }
+
+    return () => {
+      window.cancelAnimationFrame(enterFrameRef.current)
+      window.cancelAnimationFrame(settleFrameRef.current)
+      window.clearTimeout(exitTimerRef.current)
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open || !rendered) return undefined
+
+    const focusFrame = window.requestAnimationFrame(() => {
+      closeButtonRef.current?.focus({ preventScroll: true })
+    })
+
+    return () => window.cancelAnimationFrame(focusFrame)
+  }, [open, rendered])
+
+  useEffect(() => {
+    if (!rendered) return undefined
+
+    const body = document.body
+    const previousOverflow = body.style.overflow
+    const previousPaddingRight = body.style.paddingRight
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+
+    body.style.overflow = 'hidden'
+    if (scrollbarWidth > 0) {
+      const computedPadding = Number.parseFloat(window.getComputedStyle(body).paddingRight) || 0
+      body.style.paddingRight = `${computedPadding + scrollbarWidth}px`
+    }
+
+    return () => {
+      body.style.overflow = previousOverflow
+      body.style.paddingRight = previousPaddingRight
+    }
+  }, [rendered])
+
+  useEffect(() => {
+    if (!rendered) return undefined
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        if (open) onRequestCloseRef.current?.()
+        return
+      }
+
+      if (event.key !== 'Tab') return
+
+      const focusable = Array.from(
+        panelRef.current?.querySelectorAll(
+          'a[href], button:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((element) => !element.hasAttribute('hidden'))
+
+      if (focusable.length === 0) {
+        event.preventDefault()
+        closeButtonRef.current?.focus()
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const focusIsOutside = !panelRef.current?.contains(document.activeElement)
+
+      if (event.shiftKey && (document.activeElement === first || focusIsOutside)) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && (document.activeElement === last || focusIsOutside)) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [open, rendered])
+
+  if (!rendered) return null
+
+  return (
+    <div
+      className={`menu-drawer-layer menu-drawer-layer--${phase}`}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onRequestCloseRef.current?.()
+      }}
+    >
+      <section
+        className="menu-drawer"
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="menu-drawer-title"
+      >
+        <header className="menu-drawer__header">
+          <div className="menu-drawer__identity">
+            <h2 id="menu-drawer-title">Il menu</h2>
+            <p>Caffè Carducci · Grosseto</p>
+          </div>
+          <button
+            className="menu-drawer__close"
+            ref={closeButtonRef}
+            type="button"
+            onClick={() => onRequestCloseRef.current?.()}
+          >
+            <span>Chiudi</span>
+            <span className="menu-drawer__close-glyph" aria-hidden="true">×</span>
+          </button>
+        </header>
+
+        <div className="menu-drawer__body">
+          <div
+            className={`menu-drawer__loading${iframeLoaded ? ' is-hidden' : ''}`}
+            role="status"
+            aria-live="polite"
+            aria-hidden={iframeLoaded}
+          >
+            <p>Caffè Carducci</p>
+            <span>Il menu sta arrivando…</span>
+            <i aria-hidden="true" />
+          </div>
+          <iframe
+            className="menu-drawer__frame"
+            src={MENU_URL}
+            title="Menu Caffè Carducci"
+            tabIndex={0}
+            onLoad={() => setIframeLoaded(true)}
+          />
+        </div>
+
+        <footer className="menu-drawer__footer">
+          <p>Caffè Carducci · Grosseto</p>
+          <a href={MENU_URL} target="_blank" rel="noreferrer">
+            Apri il menu completo <span aria-hidden="true">↗</span>
+          </a>
+        </footer>
+      </section>
+    </div>
+  )
+}
+
 function BookingDialog({ open, onClose }) {
   const dialogRef = useRef(null)
   const callButtonRef = useRef(null)
@@ -1340,8 +1462,10 @@ function BookingDialog({ open, onClose }) {
 
 function App() {
   const [bookingOpen, setBookingOpen] = useState(false)
+  const [menuDrawerOpen, setMenuDrawerOpen] = useState(false)
   const bookingTriggerRef = useRef(null)
   const bookingFocusRestoreRef = useRef(null)
+  const menuTriggerRef = useRef(null)
 
   const openBooking = (event, restoreFocus = null) => {
     bookingTriggerRef.current = event.currentTarget
@@ -1358,6 +1482,19 @@ function App() {
       } else {
         bookingTriggerRef.current?.focus()
       }
+    })
+  }
+
+  const openMenuDrawer = (event) => {
+    menuTriggerRef.current = event.currentTarget
+    setMenuDrawerOpen(true)
+  }
+
+  const closeMenuDrawer = () => setMenuDrawerOpen(false)
+
+  const restoreMenuTriggerFocus = () => {
+    window.requestAnimationFrame(() => {
+      if (menuTriggerRef.current?.isConnected) menuTriggerRef.current.focus()
     })
   }
 
@@ -1389,15 +1526,20 @@ function App() {
       <a className="skip-link" href="#main-content">Vai al contenuto</a>
       <Header onBook={openBooking} />
       <main id="main-content">
-        <Hero onBook={openBooking} />
+        <Hero onBook={openBooking} onOpenMenu={openMenuDrawer} />
         <Story />
-        <Piatti />
+        <Piatti onOpenMenu={openMenuDrawer} />
         <Vivi />
         <Reviews />
         <Gallery />
         <Visit />
       </main>
       <Footer onBook={openBooking} />
+      <MenuDrawer
+        open={menuDrawerOpen}
+        onRequestClose={closeMenuDrawer}
+        onExited={restoreMenuTriggerFocus}
+      />
       <BookingDialog open={bookingOpen} onClose={closeBooking} />
     </>
   )
