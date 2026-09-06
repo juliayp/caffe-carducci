@@ -1209,7 +1209,7 @@ function Footer({ onBook }) {
 
         <p className="footer-credit">
           Sito realizzato da Julia · Per contatti:{' '}
-          <a href="mailto:Julia.webdesign@gmail.com">Julia.webdesign@gmail.com</a>
+          <a href="mailto:Julia.webcreative@gmail.com">Julia.webcreative@gmail.com</a>
         </p>
       </div>
     </footer>
