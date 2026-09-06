@@ -753,6 +753,9 @@ function Gallery() {
 
   const handleTrackPointerDown = (event) => {
     if (event.pointerType === 'touch' || event.button !== 0) return
+    // Let inline links keep their native click/focus behavior instead of
+    // being captured by the horizontal drag gesture on the parent track.
+    if (event.target.closest?.('a')) return
     const track = trackRef.current
     dragRef.current = {
       active: true,
@@ -870,6 +873,8 @@ function Gallery() {
               href="https://www.instagram.com/caffecarducci/"
               target="_blank"
               rel="noreferrer"
+              aria-label="Instagram — Caffè Carducci"
+              onPointerDown={(event) => event.stopPropagation()}
             >
               @caffecarducci <span aria-hidden="true">→</span>
             </a>
@@ -1201,6 +1206,11 @@ function Footer({ onBook }) {
           </nav>
           <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>
         </div>
+
+        <p className="footer-credit">
+          Sito realizzato da Julia · Per contatti:{' '}
+          <a href="mailto:Julia.webdesign@gmail.com">Julia.webdesign@gmail.com</a>
+        </p>
       </div>
     </footer>
   )
