@@ -2761,6 +2761,31 @@ h2 em {
   color: var(--white);
 }
 
+.footer-credit {
+  margin: 18px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid rgba(225, 182, 105, 0.34);
+  color: rgba(255, 250, 240, 0.58);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.footer-credit a {
+  color: var(--carducci-gold);
+  transition: color 180ms ease;
+}
+
+.footer-credit a:hover,
+.footer-credit a:focus-visible {
+  color: var(--white);
+}
+
+.footer-credit a:focus-visible {
+  outline-color: var(--carducci-gold);
+}
+
 .reveal {
   opacity: 0;
   transform: translateY(28px);
